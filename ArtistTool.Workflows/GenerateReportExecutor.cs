@@ -1,43 +1,36 @@
-﻿using Microsoft.Agents.AI.Workflows;
-using Microsoft.Agents.AI.Workflows.Reflection;
-using Microsoft.Extensions.Logging;
-using System.Text;
+﻿namespace ArtistTool.Workflows;
 
-namespace ArtistTool.Workflows
+public class GenerateReportExecutor(string id, ILogger<GenerateReportExecutor> logger) : ReflectingExecutor<GenerateReportExecutor>(id), IMessageHandler<MarketingWorkflowContext, MarketingWorkflowContext>
 {
-    public class GenerateReportExecutor(string id, ILogger<GenerateReportExecutor> logger) :
-        ReflectingExecutor<GenerateReportExecutor>(id), IMessageHandler<MarketingWorkflowContext, MarketingWorkflowContext>
+    private static int received;
+
+    public ValueTask<MarketingWorkflowContext> HandleAsync(MarketingWorkflowContext message, IWorkflowContext context, CancellationToken cancellationToken = default)
     {
+        Interlocked.Increment(ref received);
 
-        private static int received;
-        
-public ValueTask<MarketingWorkflowContext> HandleAsync(MarketingWorkflowContext message, IWorkflowContext context, CancellationToken cancellationToken = default)
+        logger.LogInformation("Fan-in to report generator, iteration: {iteration} if {total}", received, message.FanInNodes);
+
+        if (received < message.FanInNodes)
         {
-            Interlocked.Increment(ref received);
+            logger.LogInformation("Waiting for additional nodes to report in.");
+            return ValueTask.FromResult(message);
+        }
 
-            logger.LogInformation("Fan-in to report generator, iteration: {iteration} if {total}", received, message.FanInNodes);
+        var mermaidPath = Path.Combine(message.BaseDirectory, "workflow.md");
+        var mermaid = $"# Workflow diagram\r\n\r\n```mermaid\r\n{message.WorkflowDiagram}\r\n```\r\n";
+        File.WriteAllText(mermaidPath, mermaid);
 
-            if (received < message.FanInNodes)
-            {
-                logger.LogInformation("Waiting for additional nodes to report in.");
-                return ValueTask.FromResult(message);
-            }
+        var templateCss = Path.Combine(AppContext.BaseDirectory, "index.css");
+        var targetCss = Path.Combine(message.BaseDirectory, "index.css");
 
-            var mermaidPath = Path.Combine(message.BaseDirectory, "workflow.md");
-            var mermaid = $"# Workflow diagram\r\n\r\n```mermaid\r\n{message.WorkflowDiagram}\r\n```\r\n";
-            File.WriteAllText(mermaidPath, mermaid);
+        File.Copy(templateCss, targetCss);
 
-            var templateCss = Path.Combine(AppContext.BaseDirectory, "index.css");
-            var targetCss = Path.Combine(message.BaseDirectory, "index.css");
+        var sourcePhoto = message.Photo!.Path;
+        var targetPhoto = Path.Combine(message.BaseDirectory, Path.GetFileName(sourcePhoto));
 
-            File.Copy(templateCss, targetCss);
+        File.Copy(sourcePhoto, targetPhoto);
 
-            var sourcePhoto = message.Photo!.Path;
-            var targetPhoto = Path.Combine(message.BaseDirectory, Path.GetFileName(sourcePhoto));
-
-            File.Copy(sourcePhoto, targetPhoto);
-
-            var sb = new StringBuilder(@$"<!DOCTYPE html>
+        var sb = new StringBuilder(@$"<!DOCTYPE html>
 <html lang=""en"">
 <head>
     <meta charset=""UTF-8"">
@@ -51,7 +44,7 @@ public ValueTask<MarketingWorkflowContext> HandleAsync(MarketingWorkflowContext 
         <p class=""subtitle"">Generated market research</p>
     </header>
 ");
-            sb.AppendLine(@$"<main>
+        sb.AppendLine(@$"<main>
         <article>
             <section>
                 <h2>Introduction</h2>
@@ -63,58 +56,58 @@ public ValueTask<MarketingWorkflowContext> HandleAsync(MarketingWorkflowContext 
                 </blockquote>
             </section>");
 
-            sb.AppendLine($@"<section>
+        sb.AppendLine($@"<section>
                 <h2>Photo critique</h2>
                 <ul>");
-            
-            foreach (var critique in message.Critique!.Result!.Critiques)
-            {
-                sb.AppendLine($"<li><strong>{critique.Area} (Rating: {critique.Rating}/10)</strong>");
-                sb.AppendLine("<ul>");
-                sb.AppendLine("<li><em>Praise:</em> " + critique.Praise + "</li>");
-                sb.AppendLine(value: "<li><em>Improvement Suggestion:</em> " + critique.ImprovementSuggestion + "</li>");
-                sb.AppendLine("</ul>");
-            }
 
+        foreach (var critique in message.Critique!.Result!.Critiques)
+        {
+            sb.AppendLine($"<li><strong>{critique.Area} (Rating: {critique.Rating}/10)</strong>");
+            sb.AppendLine("<ul>");
+            sb.AppendLine("<li><em>Praise:</em> " + critique.Praise + "</li>");
+            sb.AppendLine(value: "<li><em>Improvement Suggestion:</em> " + critique.ImprovementSuggestion + "</li>");
             sb.AppendLine("</ul>");
-            sb.AppendLine("</section>");
+        }
 
-            sb.AppendLine("<section><h2>Market research</h2>");
+        sb.AppendLine("</ul>");
+        sb.AppendLine("</section>");
 
-            foreach (var medium in message.MediumPreviews.Keys)
-            {
-                var researchNode = message.MediumPreviews[medium];
-                sb.AppendLine($@"<section>
+        sb.AppendLine("<section><h2>Market research</h2>");
+
+        foreach (var medium in message.MediumPreviews.Keys)
+        {
+            var researchNode = message.MediumPreviews[medium];
+            sb.AppendLine($@"<section>
                     <h3>Research for medium: {medium}</h3>");
-                sb.AppendLine($@"<figure>
+            sb.AppendLine($@"<figure>
                     <img src=""{Path.GetFileName(researchNode.Result!.ImagePath)}"" alt=""{medium}"">
                     <figcaption>This is an example of the photograph as a {medium}</figcaption>
                 </figure>");
-                string area = string.Empty;
-                string topic = string.Empty;
-                foreach (var result in message.Research.Where(r => r.Result!.Medium == medium).OrderBy(r => $"{r.Result!.Area} {r.Result!.Topic}"))
+            string area = string.Empty;
+            string topic = string.Empty;
+            foreach (var result in message.Research.Where(r => r.Result!.Medium == medium).OrderBy(r => $"{r.Result!.Area} {r.Result!.Topic}"))
+            {
+                if (result.Result!.Area != area)
                 {
-                    if (result.Result!.Area != area)
+                    if (!string.IsNullOrWhiteSpace(area))
                     {
-                        if (!string.IsNullOrWhiteSpace(area))
-                        {
-                            sb.AppendLine("</section>");
-                        }
-                        sb.AppendLine($@"<section>
-                            <h4>{result.Result!.Area!}</h4>");
-                        area = result.Result!.Area!;
+                        sb.AppendLine("</section>");
                     }
-
-                    sb.AppendLine($@"<p><strong>{result.Result!.Topic}</strong></p>");
-                    var html = Markdig.Markdown.ToHtml(result.Result!.Content);
-                    sb.AppendLine(html);
+                    sb.AppendLine($@"<section>
+                            <h4>{result.Result!.Area!}</h4>");
+                    area = result.Result!.Area!;
                 }
-                sb.AppendLine("</section>");
+
+                sb.AppendLine($@"<p><strong>{result.Result!.Topic}</strong></p>");
+                var html = Markdig.Markdown.ToHtml(result.Result!.Content);
+                sb.AppendLine(html);
             }
-
             sb.AppendLine("</section>");
+        }
 
-            sb.AppendLine($@" </article>
+        sb.AppendLine("</section>");
+
+        sb.AppendLine($@" </article>
     </main>
 
     <footer>
@@ -124,13 +117,12 @@ public ValueTask<MarketingWorkflowContext> HandleAsync(MarketingWorkflowContext 
 </body>
 </html>
 ");
-            var targetFile = Path.Combine(message.BaseDirectory, "index.html");
+        var targetFile = Path.Combine(message.BaseDirectory, "index.html");
 
-            File.WriteAllText(targetFile, sb.ToString());
+        File.WriteAllText(targetFile, sb.ToString());
 
-            logger.LogDebug("Wrote final report to {targetPath}", targetFile);
+        logger.LogDebug("Wrote final report to {targetPath}", targetFile);
 
-            return ValueTask.FromResult(message);
-        }
+        return ValueTask.FromResult(message);
     }
 }

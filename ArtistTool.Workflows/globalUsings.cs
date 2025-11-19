@@ -1,0 +1,14 @@
+﻿global using ArtistTool.Domain;
+global using ArtistTool.Domain.Agents;
+global using ArtistTool.Intelligence;
+global using ArtistTool.Services;
+global using Microsoft.Agents.AI;
+global using Microsoft.Agents.AI.Workflows;
+global using Microsoft.Agents.AI.Workflows.Reflection;
+global using Microsoft.Extensions.AI;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Hosting;
+global using Microsoft.Extensions.Logging;
+global using System.Collections.Concurrent;
+global using System.ComponentModel;
+global using System.Text;
