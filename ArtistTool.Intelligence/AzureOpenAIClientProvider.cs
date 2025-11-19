@@ -49,8 +49,15 @@ namespace ArtistTool.Intelligence
 
             // Use DefaultAzureCredential for managed identity support
             // This supports: Managed Identity, Azure CLI, Visual Studio, Environment Variables, etc.
-            var credential = new DefaultAzureCredential();
-            
+            //var credential = new DefaultAzureCredential();
+            var vsTenantId = "16b3c013-d300-468d-ac64-7eda0820b6d3";
+            var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+            {
+                ExcludeEnvironmentCredential = true,
+                ExcludeManagedIdentityCredential = true,
+                TenantId = vsTenantId // if you get an error "Token tenant does not match resource tenant" during local development, force the tenant
+            });
+
             var azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
 
             // Get ChatClient instances from Azure OpenAI and enhance with logging & telemetry
