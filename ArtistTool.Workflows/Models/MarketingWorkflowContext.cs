@@ -23,6 +23,9 @@ public class MarketingWorkflowContext : BaseObservable
 
     private string workflowDiagram = string.Empty;
 
+    private static readonly List<string> logEntries = [];
+    public List<string> ActionLog = logEntries;
+
     public Photograph? Photo
     {
         get => _photo;

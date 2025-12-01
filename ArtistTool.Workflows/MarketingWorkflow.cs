@@ -39,18 +39,19 @@ public class MarketingWorkflow(IServiceProvider sp)
 
         foreach (var promptKey in agentCache.GetPromptsForAgent("Medium Preview Agent"))
         {
-            var executor = new MediumPreviewExecutor($"{nameof(MediumPreviewExecutor)}_{promptKey}", promptKey, agentCache,
-                sp.GetRequiredService<ILogger<MediumPreviewExecutor>>());
+            var executor = new MediumPreviewExecutor($"{nameof(MediumPreviewExecutor)}_{promptKey}", promptKey, agentCache, sp.GetRequiredService<ILogger<MediumPreviewExecutor>>());
             _context.MediumPreviews[promptKey] = new WorkflowNode<MediumPreviewResponse>();
             builder.BindExecutor(executor);
             builder.AddEdge(critique, executor);
 
             var enhancedText = $"The photograph titled '{_context.Photo!.Title}' is described as: {_context.Photo!.Description}. The medium to focus your research on is {promptKey}";
 
-            string[] researchers = ["Research Specialist",
-            "Marketing Expert",
-            "Social Media Content Creator",
-            "Email Marketing Specialist"];
+            string[] researchers = [
+                "Research Specialist",
+                "Marketing Expert",
+                "Social Media Content Creator"
+            //"Email Marketing Specialist"
+            ];
 
             string[] areas = ["Product research", "Marketing research", "Social media strategy", "Email marketing strategy"];
 

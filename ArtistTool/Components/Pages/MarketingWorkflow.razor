@@ -44,6 +44,13 @@ else
                     IsStarted="@research.Started"
                     IsFinished="@research.Completed"/>
                 }
+
+                <ul>
+                    @foreach (var logEntry in _context?.ActionLog ?? [])
+                    {
+                        <li>@logEntry</li>
+                    }
+                </ul>
             }
         }
         else
@@ -61,8 +68,7 @@ else
 
     private string GetNameForMedium(string medium) => $"Generate {medium} preview";
 
-    private string GetNameForResearch(ResearchResponse r) =>
-    $"Research for {r.Medium}: {r.Area} ({r.Topic})";
+    private string GetNameForResearch(ResearchResponse r) => $"Research for {r.Medium}: {r.Area} ({r.Topic})";
 
     private MarketingWorkflowContext? _context;
 
@@ -79,12 +85,12 @@ else
             _context = await Controller.GetOrStartMarketingWorkflowAsync(Id);
             timer = new Timer(5000);
             timer.Elapsed += (s, e) => InvokeAsync(() =>
-        {
-            timer.Stop();
-            timer.Dispose();
-            Navigate.NavigateTo(Navigate.Uri, forceLoad: true);
-        });
-            timer.Start(); 
+            {
+                timer.Stop();
+                timer.Dispose();
+                Navigate.NavigateTo(Navigate.Uri, forceLoad: true);
+            });
+            timer.Start();
         }
     }
 }

@@ -17,7 +17,7 @@ var useAI = builder.Configuration["Options:UseAI"]?.ToLower() == "true";
 var useWorkflows = builder.Configuration["Options:UseWorkflows"]?.ToLower() == "true";
 
 if (useAI)
-{ 
+{
     builder.Services.AddSingleton(new AIOptions
     {
         UseAI = true,
@@ -26,7 +26,7 @@ if (useAI)
     });
 
     builder.Services.AddIntelligenceServices(key => builder.Configuration[key] ?? string.Empty);
-    
+
     // Add workflow services if enabled
     if (useWorkflows)
     {
@@ -48,8 +48,10 @@ builder.Services.AddServices();
 
 var app = builder.Build();
 
+// System.Diagnostics.Debugger.Break();
+
 var dbLogger = app.Services.GetRequiredService<ILogger<Program>>();
-var database = app.Services.GetRequiredService<IPhotoDatabase>();    
+var database = app.Services.GetRequiredService<IPhotoDatabase>();
 dbLogger.LogInformation("Initializing PhotoDatabase");
 await database.InitAsync(CancellationToken.None);
 dbLogger.LogInformation("PhotoDatabase initialized successfully");
@@ -76,7 +78,7 @@ app.MapDefaultEndpoints();
 app.MapGet("/images/{type}/{id}", async (string type, string id, IPhotoDatabase db, ILogger<Program> logger) =>
 {
     logger.LogDebug("Image request: type={Type}, id={Id}", type, id);
-    
+
     // Check if this is a canvas preview request
     if (id.EndsWith("_canvas_preview"))
     {
@@ -87,29 +89,29 @@ app.MapGet("/images/{type}/{id}", async (string type, string id, IPhotoDatabase 
             logger.LogWarning("Photo not found for canvas preview: id={Id}", photoId);
             return Results.NotFound();
         }
-        
+
         var canvasPreviewPath = Path.Combine(
             Path.GetDirectoryName(photoForCanvas.Path)!,
             $"{photoId}_canvas_preview.png"
         );
-        
+
         if (File.Exists(canvasPreviewPath))
         {
             logger.LogDebug("Serving canvas preview from {Path}", canvasPreviewPath);
             return Results.File(canvasPreviewPath, "image/png");
         }
-        
+
         logger.LogWarning("Canvas preview not found at {Path}", canvasPreviewPath);
         return Results.NotFound();
     }
-    
+
     var photo = await db.GetPhotographWithIdAsync(id);
     if (photo is null)
     {
         logger.LogWarning("Image not found: id={Id}", id);
         return Results.NotFound();
     }
-    
+
     var path = type == "thumb" ? photo.ThumbnailPath : photo.Path;
     logger.LogDebug("Serving image from {Path}", path);
     return Results.File(path, photo.ContentType, photo.FileName);

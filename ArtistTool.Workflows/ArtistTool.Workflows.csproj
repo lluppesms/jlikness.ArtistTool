@@ -21,6 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Agents-v1.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Agents.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

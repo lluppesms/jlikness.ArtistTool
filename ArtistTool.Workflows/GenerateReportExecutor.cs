@@ -8,28 +8,37 @@ public class GenerateReportExecutor(string id, ILogger<GenerateReportExecutor> l
     {
         Interlocked.Increment(ref received);
 
-        logger.LogInformation("Fan-in to report generator, iteration: {iteration} if {total}", received, message.FanInNodes);
+        logger.LogInformation("Fan-in to report generator, iteration: {iteration} of {total}", received, message.FanInNodes);
 
         if (received < message.FanInNodes)
         {
-            logger.LogInformation("Waiting for additional nodes to report in.");
+            logger.LogInformation($"Waiting for additional nodes to report in. ({received} of {message.FanInNodes})");
             return ValueTask.FromResult(message);
         }
+
+        logger.LogInformation("Creating mermaid diagram...");
+        message.ActionLog.Add("Creating mermaid diagram");
 
         var mermaidPath = Path.Combine(message.BaseDirectory, "workflow.md");
         var mermaid = $"# Workflow diagram\r\n\r\n```mermaid\r\n{message.WorkflowDiagram}\r\n```\r\n";
         File.WriteAllText(mermaidPath, mermaid);
 
+        logger.LogInformation("Creating report CSS...");
+        message.ActionLog.Add("Creating report CSS...");
         var templateCss = Path.Combine(AppContext.BaseDirectory, "index.css");
         var targetCss = Path.Combine(message.BaseDirectory, "index.css");
 
         File.Copy(templateCss, targetCss);
 
+        logger.LogInformation("Copying photos...");
+        message.ActionLog.Add("Creating photos...");
         var sourcePhoto = message.Photo!.Path;
         var targetPhoto = Path.Combine(message.BaseDirectory, Path.GetFileName(sourcePhoto));
 
         File.Copy(sourcePhoto, targetPhoto);
 
+        logger.LogInformation("Creating report...");
+        message.ActionLog.Add("Creating report...");
         var sb = new StringBuilder(@$"<!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -121,7 +130,8 @@ public class GenerateReportExecutor(string id, ILogger<GenerateReportExecutor> l
 
         File.WriteAllText(targetFile, sb.ToString());
 
-        logger.LogDebug("Wrote final report to {targetPath}", targetFile);
+        logger.LogDebug($"Wrote final report to {targetFile}");
+        message.ActionLog.Add($"Wrote final report to {targetFile}");
 
         return ValueTask.FromResult(message);
     }
