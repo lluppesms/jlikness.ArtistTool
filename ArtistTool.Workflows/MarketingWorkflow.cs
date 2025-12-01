@@ -50,7 +50,7 @@ public class MarketingWorkflow(IServiceProvider sp)
                 "Research Specialist",
                 "Marketing Expert",
                 "Social Media Content Creator"
-            //"Email Marketing Specialist"
+                //"Email Marketing Specialist"
             ];
 
             string[] areas = ["Product research", "Marketing research", "Social media strategy", "Email marketing strategy"];

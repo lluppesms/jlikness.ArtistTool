@@ -1,21 +1,54 @@
 ﻿@inject IImageManager ImageManager
+@inject IPhotoDatabase photoDb
 @rendermode InteractiveServer
 
 <div class="upload-header">
     <h3>Upload your photographs</h3>
-    <p class="upload-summary">Upload up to 10 files (20 MB each). Supported formats: <span>.jpg, .jpeg, .gif, .tif, .tiff, .png</span>.</p>
+    <p class="upload-summary">Upload a file (up to 20 MB each). Supported formats: <span>.jpg, .jpeg, .gif, .tif, .tiff, .png</span>.</p>
+
+    <div class="upload-input-group">
+        <label class="upload-label">
+            <span>Select a file to add to your library</span>
+            <InputFile class="upload-input" OnChange="LoadFiles" multiple disabled="@isLoading" />
+        </label>
+    </div>
+
+    <div class="upload-toggle">
+        <label class="toggle-label">
+            <input type="checkbox" @bind="useAI" @bind:after="ToggleAI" />
+            <span class="toggle-text">Use Agentic Mode</span>
+        </label>
+    </div>
+
+    @if (!useAI)
+    {
+        <div class="upload-metadata">
+            <div class="metadata-field">
+                <label for="description">Description</label>
+                <textarea id="description" @bind="description" placeholder="Enter photo description..." rows="3"></textarea>
+            </div>
+            <div class="metadata-field">
+                <label for="category">Category</label>
+                <select id="category" @bind="selectedCategory">
+                    <option value="">Select a category...</option>
+                    @foreach (var category in Categories)
+                    {
+                        <option value="@category.Name">@category.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="metadata-field">
+                <label for="tags">Tags</label>
+                <textarea id="tags" @bind="tags" placeholder="Enter tags..." rows="3"></textarea>
+            </div>
+        </div>
+    }
 </div>
 
-<div class="upload-input-group">
-    <label class="upload-label">
-        <span>Select files to add them to your library</span>
-        <InputFile class="upload-input" OnChange="LoadFiles" multiple disabled="@isLoading" />
-    </label>
-</div>
 
 @if (isLoading)
 {
-    <p class="upload-status">Uploading...</p>
+    <p class="upload-status">Uploading and analyzing...</p>
 }
 
 <div class="upload-results">
@@ -47,6 +80,29 @@
     private long maxFileSize = 20 * Utility.Megabyte;
     private int maxAllowedFiles = 10;
     private bool isLoading;
+    private bool useAI = false;
+    private string description = string.Empty;
+    private string tags = string.Empty;
+    private string selectedCategory = string.Empty;
+    public List<Category> Categories { get; set; } = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Categories.Count == 0)
+        {
+            Categories = (await photoDb.ListCategoriesAsync()).ToList();
+        }
+    }
+
+    private void ToggleAI()
+    {
+        // Clear fields when toggling AI on
+        if (useAI)
+        {
+            description = string.Empty;
+            selectedCategory = string.Empty;
+        }
+    }
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
@@ -59,9 +115,7 @@
         {
             try
             {
-                await ImageManager.SaveImageAsync(
-                    file.Name,
-                    file.ContentType,
+                await ImageManager.SaveImageAsync(file.Name, file.ContentType,
                     async fs =>
                     {
                         await using var source = file.OpenReadStream(maxFileSize);
@@ -89,4 +143,5 @@
             await OnCompleted.InvokeAsync();
         }
     }
+
 }

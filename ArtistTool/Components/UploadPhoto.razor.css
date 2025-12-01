@@ -21,6 +21,84 @@
     color: #475569;
 }
 
+.upload-toggle {
+    margin-top: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+    accent-color: #4f8cf4;
+}
+
+.toggle-text {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+.upload-metadata {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 1.25rem;
+    background: rgba(248, 250, 255, 0.9);
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.metadata-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.metadata-field label {
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.metadata-field textarea,
+.metadata-field select {
+    width: 100%;
+    background: #ffffff;
+    color: #1f2937;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    border-radius: 14px;
+    padding: 0.75rem 1rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metadata-field textarea:focus,
+.metadata-field select:focus {
+    outline: none;
+    border-color: #4f8cf4;
+    box-shadow: 0 0 0 3px rgba(79, 140, 244, 0.1);
+}
+
+.metadata-field textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.metadata-field select {
+    cursor: pointer;
+}
+
 .upload-input-group {
     display: flex;
     flex-direction: column;
